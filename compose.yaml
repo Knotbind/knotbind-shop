@@ -1,0 +1,30 @@
+# Knotbind shop, run beside Knotbind on the shared host.
+# Only these two containers. They join the existing proxy network.
+name: knotbind-shop
+
+services:
+  shop-api:
+    build: ./api
+    container_name: knotbind_shop_api
+    environment:
+      SHOP_FIELD: ${SHOP_FIELD:-total_cents}
+    restart: unless-stopped
+    networks:
+      - proxy
+
+  shop-mcp:
+    build: ./mcp
+    container_name: knotbind_shop_mcp
+    environment:
+      PORT: 8081
+      SHOP_GATEWAY_KEY: ${SHOP_GATEWAY_KEY:-}
+      SHOP_GATEWAY_MODEL: ${SHOP_GATEWAY_MODEL:-openai/gpt-4o-mini}
+    depends_on:
+      - shop-api
+    restart: unless-stopped
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
