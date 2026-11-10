@@ -77,6 +77,26 @@ describe("shop tools", () => {
       tools.result.tools.map((t: { name: string }) => t.name),
       ["get_order", "list_orders", "create_order", "ask_shop"]
     );
+    // Knotbind builds starter arguments from schema.properties, so an unwrapped
+    // field map would make every suggested Check call the tool with nothing.
+    const getOrder = tools.result.tools.find(
+      (t: { name: string }) => t.name === "get_order"
+    );
+    assert.deepEqual(getOrder.inputSchema, {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    });
+    const missingArg = await (
+      await post({
+        jsonrpc: "2.0",
+        id: 4,
+        method: "tools/call",
+        params: { name: "get_order", arguments: {} },
+      })
+    ).json();
+    assert.equal(missingArg.result.isError, true);
+    assert.match(missingArg.result.content[0].text, /id: required/);
     const call = await (await post({
       jsonrpc: "2.0",
       id: 3,

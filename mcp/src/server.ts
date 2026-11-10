@@ -8,12 +8,20 @@ type Hook = { at: string; body: unknown };
 
 export function register(server: McpServer, send: Send): void {
   const toolName = "get_order";
-  server.tool(toolName, { id: { type: "string" } }, async ({ id }) => {
-    const order = await getOrder(send, id);
-    return {
-      content: [{ type: "text", text: `${order.id}: ${order.total_cents}` }],
-    };
-  });
+  server.tool(
+    toolName,
+    {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    async ({ id }) => {
+      const order = await getOrder(send, id);
+      return {
+        content: [{ type: "text", text: `${order.id}: ${order.total_cents}` }],
+      };
+    }
+  );
 
   server.registerTool(
     "list_orders",
@@ -21,21 +29,38 @@ export function register(server: McpServer, send: Send): void {
     async () => {
       const orders = await listOrders(send);
       return {
-        content: [{ type: "text", text: orders.map((order) => order.id).join(",") }],
+        content: [
+          { type: "text", text: orders.map((order) => order.id).join(",") },
+        ],
       };
     }
   );
 
-  server.tool("create_order", { sku: { type: "string" } }, async ({ sku }) => {
-    const order = await createOrder(send, sku);
-    return {
-      content: [{ type: "text", text: `${order.id}: ${order.total_cents}` }],
-    };
-  });
+  server.tool(
+    "create_order",
+    {
+      type: "object",
+      properties: { sku: { type: "string" } },
+      required: ["sku"],
+    },
+    async ({ sku }) => {
+      const order = await createOrder(send, sku);
+      return {
+        content: [{ type: "text", text: `${order.id}: ${order.total_cents}` }],
+      };
+    }
+  );
 
   server.tool(
     "ask_shop",
-    { id: { type: "string" }, note: { type: "string" } },
+    {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        note: { type: "string" },
+      },
+      required: ["id"],
+    },
     async ({ id, note }) => {
       const order = await getOrder(send, id);
       const answer = await askShop(send, {
@@ -45,6 +70,14 @@ export function register(server: McpServer, send: Send): void {
       return { content: [{ type: "text", text: answer }] };
     }
   );
+}
+
+/** The required field names of a JSON Schema object, as the SDK advertises them. */
+function requiredNames(schema: unknown): string[] {
+  const s = schema as { required?: unknown } | null;
+  return Array.isArray(s?.required)
+    ? s.required.filter((k): k is string => typeof k === "string")
+    : [];
 }
 
 const readBody = async (req: IncomingMessage): Promise<string> => {
@@ -118,8 +151,30 @@ export function createShopServer(send: Send = fetch) {
           },
         });
       }
+      const args = (msg.params?.arguments ?? {}) as Record<string, unknown>;
+      // The real SDK rejects arguments that fail the schema before the handler
+      // runs. Without this, a missing id would reach the API and show up as a
+      // 404 instead of an argument error.
+      const missing = requiredNames(tool.schema).filter(
+        (key) => args[key] === undefined || args[key] === ""
+      );
+      if (missing.length) {
+        return reply(res, 200, {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [
+              {
+                type: "text",
+                text: `Input validation error: ${missing.map((k) => `${k}: required`).join(", ")}`,
+              },
+            ],
+            isError: true,
+          },
+        });
+      }
       try {
-        const result = await tool.handler(msg.params?.arguments ?? {});
+        const result = await tool.handler(args as Record<string, string>);
         return reply(res, 200, { jsonrpc: "2.0", id, result });
       } catch (error) {
         return reply(res, 200, {
