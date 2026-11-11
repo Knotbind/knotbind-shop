@@ -24,12 +24,12 @@ const ORDER_INPUT = {
 } as const;
 
 const orderResult = (order: Order): ToolResult => ({
-  content: [{ type: "text", text: `${order.id}: ${order.total_cents}` }],
+  content: [{ type: "text", text: `${order.id}: ${order.amount_cents}` }],
   structuredContent: {
     id: order.id,
     status: order.status,
     sku: order.sku,
-    total_cents: order.total_cents,
+    total_cents: order.amount_cents,
   },
 });
 
@@ -55,7 +55,7 @@ export function register(server: McpServer, send: Send): void {
           {
             type: "text",
             text: orders
-              .map((order) => `${order.id}:${order.total_cents}`)
+              .map((order) => `${order.id}:${order.amount_cents}`)
               .join(","),
           },
         ],
@@ -84,7 +84,7 @@ export function register(server: McpServer, send: Send): void {
       const order = await getOrder(send, id);
       const answer = await askShop(send, {
         orderId: order.id,
-        note: note || `total ${order.total_cents}`,
+        note: note || `total ${order.amount_cents}`,
       });
       return { content: [{ type: "text", text: answer }] };
     },

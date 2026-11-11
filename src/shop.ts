@@ -13,7 +13,7 @@ export type Order = {
   id: string;
   status: string;
   sku: string;
-  total_cents: number;
+  amount_cents: number;
 };
 
 /** The tool's structured answer, so Knotbind sees `total_cents` as a field. */
