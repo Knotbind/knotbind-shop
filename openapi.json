@@ -1,6 +1,6 @@
 {
   "openapi": "3.1.0",
-  "info": { "title": "Knotbind Shop API", "version": "1.0.0" },
+  "info": { "title": "Knotbind shop", "version": "1.0.0" },
   "servers": [{ "url": "https://www.knotbind.com/shop" }],
   "paths": {
     "/v1/orders": {
@@ -8,7 +8,7 @@
         "operationId": "listOrders",
         "responses": {
           "200": {
-            "description": "ok",
+            "description": "Every order.",
             "content": {
               "application/json": {
                 "schema": {
@@ -36,7 +36,7 @@
         },
         "responses": {
           "201": {
-            "description": "created",
+            "description": "The order created.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Order" }
@@ -59,13 +59,14 @@
         ],
         "responses": {
           "200": {
-            "description": "ok",
+            "description": "The order with that id.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Order" }
               }
             }
-          }
+          },
+          "404": { "description": "No order with that id." }
         }
       }
     }
@@ -74,7 +75,7 @@
     "schemas": {
       "Order": {
         "type": "object",
-        "required": ["id", "status", "sku"],
+        "required": ["id", "status", "sku", "total_cents"],
         "properties": {
           "id": { "type": "string" },
           "status": { "type": "string" },

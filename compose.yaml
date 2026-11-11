@@ -1,20 +1,35 @@
 # Knotbind shop, run beside Knotbind on the shared host.
-# Only these two containers. They join the existing proxy network.
+# Two containers, both named knotbind_*, on the Knotbind networks only.
 name: knotbind-shop
 
 services:
   shop-api:
-    build: ./api
+    build: .
     container_name: knotbind_shop_api
+    command: ["node", "--experimental-strip-types", "src/api.ts"]
     environment:
+      PORT: 8080
       SHOP_FIELD: ${SHOP_FIELD:-total_cents}
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - proxy
+      - internal
 
   shop-mcp:
-    build: ./mcp
+    build: .
     container_name: knotbind_shop_mcp
+    command: ["node", "--experimental-strip-types", "src/mcp-main.ts"]
     environment:
       PORT: 8081
       SHOP_GATEWAY_KEY: ${SHOP_GATEWAY_KEY:-}
@@ -22,9 +37,24 @@ services:
     depends_on:
       - shop-api
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8081/health').then(r=>process.exit(r.ok?0:1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - proxy
+      - internal
 
 networks:
   proxy:
+    external: true
+  internal:
+    name: knotbind_internal
     external: true

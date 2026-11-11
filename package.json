@@ -1,0 +1,16 @@
+{
+  "name": "knotbind-shop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/*.test.ts",
+    "start:api": "node --experimental-strip-types src/api.ts",
+    "start:mcp": "node --experimental-strip-types src/mcp-main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

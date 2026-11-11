@@ -1,11 +1,35 @@
 # Knotbind shop
 
-A small shop API and an MCP server, used to show Knotbind monitoring and Mend.
+A small shop API and an MCP server. It exists so Knotbind and Mend can be
+shown end to end on a real repo: watch it, break it, get a pull request.
 
-- `GET /v1/orders/{id}` returns `total_cents`.
-- Set `SHOP_FIELD=amount_cents` to rename that field. The OpenAPI text says `Replaces total_cents.`
-- The MCP tool `get_order` reads that field. Mend can open a pull request that renames it in this repo.
-- The MCP tool `ask_shop` calls the Knotbind Gateway with `x-knotbind-cache-key`, so Semantic Cache, Guardrails, Model Failover, Advanced Rate Limits and Request Analytics apply to that call.
-- `POST /hooks/order` on the MCP server accepts an order webhook.
+## What is in it
 
-Public paths, once routed: `https://www.knotbind.com/shop` and `https://www.knotbind.com/shop-mcp/mcp`.
+- `src/api.ts`: three order endpoints and `/openapi.json`.
+- `src/shop.ts`: the calls the tools make. The address is two plain consts.
+- `src/server.ts`: the MCP server. Tools register with `registerTool`, and the
+  order tools declare an `outputSchema` and answer with `structuredContent`, so
+  a renamed response field is something Knotbind can see.
+- `src/shop.test.ts`: runs with no network. `npm test`.
+
+## The break
+
+`SHOP_FIELD=amount_cents` renames `total_cents` in the answer and writes
+`Replaces total_cents.` in the OpenAPI. That is the stated rename Mend reads.
+Without the env var the field is `total_cents` again.
+
+## Gateway add-ons
+
+The `ask_shop` tool posts to `POST /v1/chat/completions` on the Gateway with
+`Authorization: Bearer <SHOP_GATEWAY_KEY>` and `x-knotbind-cache-key`:
+
+| Add-on | What it does with that call |
+| --- | --- |
+| Semantic Cache | reads `x-knotbind-cache-key` |
+| Content Guardrails | redacts the reply before it comes back |
+| Request Analytics | counts the request |
+| Model Failover | uses the key's fallback chain |
+| Advanced Rate Limits | applies the key's limits |
+| MCP Data Plane | fronts Knotbind's own calls into this server, once enabled |
+
+`SHOP_GATEWAY_KEY` is an access key from the dashboard. It is never committed.
