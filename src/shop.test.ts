@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { McpServer } from "./mcp.ts";
 import { handleJsonRpc, register } from "./server.ts";
-import { ORDERS_PATH, SHOP_API, askShop } from "./shop.ts";
+import { ORDERS_PATH, SHOP_API, askShop, type Order } from "./shop.ts";
 
 const json = (body: unknown): Response =>
   new Response(JSON.stringify(body), {
@@ -13,7 +13,9 @@ const json = (body: unknown): Response =>
     headers: { "content-type": "application/json" },
   });
 
-const ORDER = { id: "1001", status: "open", sku: "mug", total_cents: 1299 };
+// The answer is built from the same type the call reads, so a rename by Mend
+// lands here too and the test still proves the field arrived.
+const ORDER: Order = { id: "1001", status: "open", sku: "mug", total_cents: 1299 };
 
 const serverWith = (send: typeof fetch) => {
   const mcp = new McpServer();

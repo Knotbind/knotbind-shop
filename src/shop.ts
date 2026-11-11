@@ -28,19 +28,22 @@ export const ORDER_SCHEMA = {
   required: ["id", "status", "sku", "total_cents"],
 } as const;
 
-async function readJson<T>(response: Response): Promise<T> {
-  if (!response.ok) throw new Error(`Shop ${response.status}`);
-  return (await response.json()) as T;
-}
-
+/**
+ * Each call reads its answer inside the function that makes it, and names the
+ * type it expects. A shared `readJson<T>(response)` helper hides that, and
+ * then nothing can be tied to the operation: Mend finds the call, but no use
+ * of a field, so it cannot rename one.
+ */
 export async function getOrder(send: Send, id: string): Promise<Order> {
   const response = await send(`${SHOP_API}${ORDERS_PATH}/${id}`);
-  return readJson<Order>(response);
+  if (!response.ok) throw new Error(`Shop ${response.status}`);
+  return (await response.json()) as Order;
 }
 
 export async function listOrders(send: Send): Promise<Order[]> {
   const response = await send(`${SHOP_API}${ORDERS_PATH}`);
-  return readJson<Order[]>(response);
+  if (!response.ok) throw new Error(`Shop ${response.status}`);
+  return (await response.json()) as Order[];
 }
 
 export async function createOrder(send: Send, sku: string): Promise<Order> {
@@ -49,7 +52,8 @@ export async function createOrder(send: Send, sku: string): Promise<Order> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ sku }),
   });
-  return readJson<Order>(response);
+  if (!response.ok) throw new Error(`Shop ${response.status}`);
+  return (await response.json()) as Order;
 }
 
 /**
