@@ -15,7 +15,7 @@ const json = (body: unknown): Response =>
 
 // The answer is built from the same type the call reads, so a rename by Mend
 // lands here too and the test still proves the field arrived.
-const ORDER: Order = { id: "1001", status: "open", sku: "mug", total_cents: 1299 };
+const ORDER: Order = { id: "1001", status: "open", sku: "mug", amount_cents: 1299 };
 
 const serverWith = (send: typeof fetch) => {
   const mcp = new McpServer();
